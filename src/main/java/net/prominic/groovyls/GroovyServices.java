@@ -112,6 +112,7 @@ public class GroovyServices implements TextDocumentService, WorkspaceService, La
 	private LanguageClient languageClient;
 
 	private Path workspaceRoot;
+	private Set<String> indexFiles;
 	private ICompilationUnitFactory compilationUnitFactory;
 	private GroovyLSCompilationUnit compilationUnit;
 	private ASTNodeVisitor astVisitor;
@@ -125,8 +126,9 @@ public class GroovyServices implements TextDocumentService, WorkspaceService, La
 		compilationUnitFactory = factory;
 	}
 
-	public void setWorkspaceRoot(Path workspaceRoot) {
+	public void setWorkspaceRoot(Path workspaceRoot, Set<String> indexFiles) {
 		this.workspaceRoot = workspaceRoot;
+		this.indexFiles = indexFiles;
 		createOrUpdateCompilationUnit();
 	}
 
@@ -183,6 +185,7 @@ public class GroovyServices implements TextDocumentService, WorkspaceService, La
 		}
 		JsonObject settings = (JsonObject) params.getSettings();
 		this.updateClasspath(settings);
+		// this.updateIndexFiles(settings); add to updateClassPath?
 	}
 
 	private void updateClasspath(JsonObject settings) {
@@ -410,7 +413,7 @@ public class GroovyServices implements TextDocumentService, WorkspaceService, La
 		}
 
 		GroovyLSCompilationUnit oldCompilationUnit = compilationUnit;
-		compilationUnit = compilationUnitFactory.create(workspaceRoot, fileContentsTracker);
+		compilationUnit = compilationUnitFactory.create(workspaceRoot, fileContentsTracker, indexFiles);
 		fileContentsTracker.resetChangedFiles();
 
 		if (compilationUnit != null) {

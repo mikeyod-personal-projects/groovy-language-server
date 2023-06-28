@@ -65,7 +65,7 @@ public class CompilationUnitFactory implements ICompilationUnitFactory {
 		classLoader = null;
 	}
 
-	public GroovyLSCompilationUnit create(Path workspaceRoot, FileContentsTracker fileContentsTracker) {
+	public GroovyLSCompilationUnit create(Path workspaceRoot, FileContentsTracker fileContentsTracker, Set<String> indexFiles) {
 		if (config == null) {
 			config = getConfiguration();
 		}
@@ -105,7 +105,7 @@ public class CompilationUnitFactory implements ICompilationUnitFactory {
 					return;
 				}
 				String contents = fileContentsTracker.getContents(uri);
-				addOpenFileToCompilationUnit(uri, contents, compilationUnit);
+				addOpenFileToCompilationUnit(uri, contents, compilationUnit, indexFiles);
 			});
 		}
 
@@ -158,24 +158,50 @@ public class CompilationUnitFactory implements ICompilationUnitFactory {
 	}
 
 	protected void addDirectoryToCompilationUnit(Path dirPath, GroovyLSCompilationUnit compilationUnit,
-			FileContentsTracker fileContentsTracker, Set<URI> changedUris) {
+			FileContentsTracker fileContentsTracker, Set<URI> changedUris, Set<String> indexFiles) {
 		try {
 			if (Files.exists(dirPath)) {
 				Files.walk(dirPath).forEach((filePath) -> {
-					if (!filePath.toString().endsWith(FILE_EXTENSION_GROOVY)) {
+					// how do i add in the if condition if the set of indexFiles is not empty and the file name is in the set of indexFiles?
+					filename = filePath.getFileName().toString()
+					indexFilesBoolean = indexFiles.isEmpty()
+					if ((indexFiles != null && !indexFilesBoolean) && !indexFiles.contains(filename)) {
+						System.ln.println("File is not in the set of indexFiles", filename);
 						return;
 					}
-					URI fileURI = filePath.toUri();
-					if (!fileContentsTracker.isOpen(fileURI)) {
-						File file = filePath.toFile();
-						if (file.isFile()) {
-							if (changedUris == null || changedUris.contains(fileURI)) {
-								compilationUnit.addSource(file);
-							}
+					if (!filename.endsWith(FILE_EXTENSION_GROOVY)) {
+						return;
+					}
+					if (indexFiles.contains(filename)) {
+						System.ln.println("File is in the set of indexFiles", filename);
+						URI fileURI = filePath.toUri();
+						if (!fileContentsTracker.isOpen(fileURI)) {
+							File file = filePath.toFile();
+							if (file.isFile()) {
+								if (changedUris == null || changedUris.contains(fileURI)) {
+									compilationUnit.addSource(file);
+								}
+							}	
 						}
 					}
+					else if (indexFiles.isEmpty() || indexFiles == null){
+						System.ln.println("IndexFiles is empty | Normal Indexing");
+						URI fileURI = filePath.toUri();
+						if (!fileContentsTracker.isOpen(fileURI)) {
+							File file = filePath.toFile();
+							if (file.isFile()) {
+								if (changedUris == null || changedUris.contains(fileURI)) {
+									compilationUnit.addSource(file);
+								}
+							}	
+						}
+					}
+					else {
+						System.ln.println("File is not in the set of indexFiles", filename);
+					}
+
 				});
-			}
+			
 
 		} catch (IOException e) {
 			System.err.println("Failed to walk directory for source files: " + dirPath);
@@ -189,12 +215,13 @@ public class CompilationUnitFactory implements ICompilationUnitFactory {
 				return;
 			}
 			String contents = fileContentsTracker.getContents(uri);
-			addOpenFileToCompilationUnit(uri, contents, compilationUnit);
+			addOpenFileToCompilationUnit(uri, contents, compilationUnit, indexFiles);
 		});
 	}
 
-	protected void addOpenFileToCompilationUnit(URI uri, String contents, GroovyLSCompilationUnit compilationUnit) {
+	protected void addOpenFileToCompilationUnit(URI uri, String contents, GroovyLSCompilationUnit compilationUnit, Set<String> indexFiles) {
 		Path filePath = Paths.get(uri);
+		if ((indexFiles.isEmpty() || indexFiles == null || indexFiles.contains(filename)) && (filename.endsWith(FILE_EXTENSION_GROOVY))) {
 		SourceUnit sourceUnit = new SourceUnit(filePath.toString(),
 				new StringReaderSourceWithURI(contents, uri, compilationUnit.getConfiguration()),
 				compilationUnit.getConfiguration(), compilationUnit.getClassLoader(),

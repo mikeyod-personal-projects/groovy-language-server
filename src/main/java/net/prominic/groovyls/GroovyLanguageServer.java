@@ -27,6 +27,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
+import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Map;
+import java.lang.reflect.Type;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import org.eclipse.lsp4j.CompletionOptions;
 import org.eclipse.lsp4j.InitializeParams;
@@ -47,11 +55,14 @@ import net.prominic.groovyls.config.ICompilationUnitFactory;
 public class GroovyLanguageServer implements LanguageServer, LanguageClientAware {
 
     public static void main(String[] args) {
+        System.out.print("HELP1");
         InputStream systemIn = System.in;
         OutputStream systemOut = System.out;
         // redirect System.out to System.err because we need to prevent
         // System.out from receiving anything that isn't an LSP message
         System.setOut(new PrintStream(System.err));
+        System.out.println("systemIn: " + systemIn);
+        System.out.println("systemOut: " + systemOut);
         GroovyLanguageServer server = new GroovyLanguageServer();
         Launcher<LanguageClient> launcher = Launcher.createLauncher(server, LanguageClient.class, systemIn, systemOut);
         server.connect(launcher.getRemoteProxy());
@@ -71,10 +82,30 @@ public class GroovyLanguageServer implements LanguageServer, LanguageClientAware
     @Override
     public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
         String rootUriString = params.getRootUri();
+        // System.out.print("In initialize HERE");
+        Object paramsObject = params.getInitializationOptions();
+        // System.out.println("In initialize HERE3\n");
+        Gson gson = new Gson();
+        String jsonString = gson.toJson(paramsObject);
+        Type type = new TypeToken<Map<String, Object>>() {}.getType();
+        Map<String, Object> myMap = gson.fromJson(jsonString, type);
+        // Object indexFilesValue = myMap.get("indexFiles");
+        List<Object> indexFilesListObject = (List<Object>) myMap.get("indexFiles");
+        System.out.println("print indexfileslist objects \n");
+        for (Object item : indexFilesListObject) {
+            System.out.println(item.getClass());
+        }
+        // System.out.println("print indexfile list strings \n");
+        List<String> indexFilesList = (List<String>) myMap.get("indexFiles");
+        // System.out.println(indexFilesList);
+        System.out.println("print hashset strings \n");
+        Set<String> fileSet = new HashSet<>(indexFilesList);
+        System.out.println(fileSet);
+    // get list path data from object then convert to set
         if (rootUriString != null) {
             URI uri = URI.create(params.getRootUri());
             Path workspaceRoot = Paths.get(uri);
-            groovyServices.setWorkspaceRoot(workspaceRoot);
+            groovyServices.setWorkspaceRoot(workspaceRoot,fileSet);
         }
 
         CompletionOptions completionOptions = new CompletionOptions(false, Arrays.asList("."));
