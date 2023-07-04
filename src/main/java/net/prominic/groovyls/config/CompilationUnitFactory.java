@@ -69,7 +69,7 @@ public class CompilationUnitFactory implements ICompilationUnitFactory {
 		if (config == null) {
 			config = getConfiguration();
 		}
-
+		system.ln.println(workspaceRoot, fileContentsTracker, indexFiles, 'workspaceRoot, fileContentsTracker, indexFiles in CompilationUnitFactory.java');
 		if (classLoader == null) {
 			classLoader = new GroovyClassLoader(ClassLoader.getSystemClassLoader().getParent(), config, true);
 		}
@@ -95,8 +95,10 @@ public class CompilationUnitFactory implements ICompilationUnitFactory {
 		}
 
 		if (workspaceRoot != null) {
-			addDirectoryToCompilationUnit(workspaceRoot, compilationUnit, fileContentsTracker, changedUris);
+			system.ln.println(workspaceRoot, 'workspaceRoot condition in CompilationUnitFactory.java');
+			addDirectoryToCompilationUnit(workspaceRoot, compilationUnit, fileContentsTracker, changedUris, indexFiles);
 		} else {
+			system.ln.println(workspaceRoot, 'workspaceRoot else condition in CompilationUnitFactory.java');
 			final Set<URI> urisToAdd = changedUris;
 			fileContentsTracker.getOpenURIs().forEach(uri -> {
 				// if we're only tracking changes, skip all files that haven't
@@ -218,7 +220,7 @@ public class CompilationUnitFactory implements ICompilationUnitFactory {
 			addOpenFileToCompilationUnit(uri, contents, compilationUnit, indexFiles);
 		});
 	}
-
+			}
 	protected void addOpenFileToCompilationUnit(URI uri, String contents, GroovyLSCompilationUnit compilationUnit, Set<String> indexFiles) {
 		Path filePath = Paths.get(uri);
 		if ((indexFiles.isEmpty() || indexFiles == null || indexFiles.contains(filename)) && (filename.endsWith(FILE_EXTENSION_GROOVY))) {
